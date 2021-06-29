@@ -1,6 +1,9 @@
 import discord
 import os
 from stay_awake import stay_awake
+import commands
+import jail
+import conditions
 
 stay_awake()
 
@@ -20,115 +23,59 @@ emoji = {
   }
 
 custom_names = [
-  "yeehaw",
-  "oh_no",
-  "kirby_dab",
-  "poggy",
   "kirbyknife",
-  "kirbyF",
-  "kirbylove",
-  "kirbycry",
-  "kirbyahhh",
-  "kirbysweat",
-  "kirbysparkle",
-  "pepeignore",
-  "pepecry",
-  "angerysad",
-  "hehe",
-  "angery",
-  "kirbysit",
-  "pikalul",
-  "surprise",
-  "reverse",
-  "sheesh",
-  "frog_knife",
-  "fight",
-  "zoop",
-  "shy",
-  "sad_cowboy_bread",
+  "kirbydab",
+  "kirbythreaten",
   "kya",
-  "tiredcat",
-  "pain",
-  "kekdog",
-  "zoomeyes",
-  "crylaugh",
-  "shockedpika",
-  "IEatAChip",
-  "Kirbyhug",
-  "peepoe",
-  "hmmhuh",
-  "fuq",
-  "ghosthug",
-  "blobthonk",
-  "gunright",
-  "gunleft",
-  "vibeFail",
-  "vibeCheck",
-  "kirb",
-  "kitty_boba",
-  "party_boba"]
+  "surprise",
+  "kirbylove"]
 custom_emoji = {}
+
+ids = {
+  "vanja": 176483923868647424,
+  "cc": 233744742154764288,
+  "stuff": 320313823905054720,
+  "milk": 584451089521442846,
+  "nasrat": 149370232413224961,
+  "shae": 689672010716282969,
+  "ib": 288495370869407745,
+}
 
 @bot.event
 async def on_ready():
   print("We have logged in. as {0.user}".format(bot))
   for name in custom_names:
     custom_emoji[name] = discord.utils.get(bot.emojis, name=name)
-  print("Updated custom emojis")
 
 @bot.event
 async def on_message(message):
-  if message.author == bot or message.author.id == 854021759564906497:
+  global ids
+
+  if message.author == bot.user:
     return
 
-  text = message.content.lower().strip()
+  # auto reactions
+  for autoreaction in conditions.get_autoreact(message, custom_emoji, emoji):
+    await autoreact(message, autoreaction[0], autoreaction[1])
 
-  await autoreact(
-    message, 
-    "milk" in text, 
-    [emoji["milk"], emoji["cow"]])
+  # auto responses
+  for autoresponse in conditions.get_autoreply(message, ids):
+    await automessage(message, autoresponse[0], autoresponse[1])
 
-  vanja_id = 176483923868647424
-  cc_id = 233744742154764288
-  stuff_id = 320313823905054720
-  milk_id = 584451089521442846
+  conditions.table_unflip(message)
 
-  await autoreact(
-    message,
-    "nut" in text,
-    [custom_emoji["frog_knife"], custom_emoji["kirbyknife"]]
-  )
-
-  await autoreact(
-    message,
-    "anime" in text,
-    [custom_emoji["kya"]]
-  )
-
-  await reply(
-    message,
-    "candice" in text,
-    "can dis 🤪  fit in your mouth"
-  )
-
-  await reply(
-    message,
-    "dragon" in text,
-    "imagine dragon deez 🤪"
-  )
-
-  await reply(
-    message,
-    message.author.id == vanja_id and "nut" in text,
-    "jail"
-  )
+  # auto roles
+  await jail.jail_check(bot, message)
+  
+  # misc commands
+  await commands.commands(message)
 
 async def autoreact(message, condition, emojis):
   if condition:
     for emoji in emojis:
       await message.add_reaction(emoji)
 
-async def reply(message, condition, response):
+async def automessage(message, condition, response):
   if condition:
     await message.channel.send(response)
 
